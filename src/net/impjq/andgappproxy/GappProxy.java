@@ -54,6 +54,13 @@ public class GappProxy extends Activity implements OnClickListener {
 
 		}
 	};
+	
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
+		this.unbindService(mServiceConnection);
+	}
 
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
