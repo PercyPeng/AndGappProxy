@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, GappProxy!</string>
+    <string name="app_name">AndroidGappProxy</string>
+    <string name="start_proxy">Start Proxy</string>
+    <string name="stop_proxy">Stop Proxy</string>
+</resources>

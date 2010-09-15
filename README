@@ -1,0 +1,16 @@
+GappProxy for Android
+
+Right now I just finished Http GET Methord.
+
+TODO:
+Implement Http POST Methord.
+Implement Http CONNECT Methord,support https(port 443).
+
+Now I still havn't find a methord to Set the global http proxy.
+
+
+Contact me:
+Blog:http://www.impjq.net
+Email:pengjianqing@gmail.com
+Twitter:http://twitter.com/pengjianqing
+
