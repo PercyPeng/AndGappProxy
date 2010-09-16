@@ -11,11 +11,19 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.NoSuchAlgorithmException;
 import java.security.KeyStore.Entry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base64;
@@ -36,6 +44,8 @@ public class ProxyServerWorkThread extends Thread {
 	public static final String LOGTAG = ProxyServerWorkThread.class
 			.getSimpleName();
 	Socket mClienSocket;
+	
+	SSLSocket mSSLSocket;
 
 	String mGappProxyURL = "http://pjqproxy1.appspot.com/fetch.py";
 
@@ -81,14 +91,14 @@ public class ProxyServerWorkThread extends Thread {
 					break;
 				}
 				Utils.log(LOGTAG, "Received:length=" + line.length());
-			
 
 				if (!hashMap.containsKey("METHORD")) {
 					if (line.startsWith("GET")) {
 						hashMap.put(REQUEST_METHORD, "GET");
 						String getValue = line.split(" ")[1];
 						hashMap.put(REQUEST_URL, getValue);
-						continue;
+						hashMap = handleGET(br, hashMap, line);
+						break;
 					}
 
 					if (line.startsWith("POST")) {
@@ -96,7 +106,8 @@ public class ProxyServerWorkThread extends Thread {
 						hashMap.put(REQUEST_METHORD, "POST");
 						String getValue = line.split(" ")[1];
 						hashMap.put(REQUEST_URL, getValue);
-						continue;
+						hashMap = handlePOST(br, hashMap, line);
+						break;
 					}
 
 					if (line.startsWith("CONNECT")) {
@@ -104,43 +115,47 @@ public class ProxyServerWorkThread extends Thread {
 						hashMap.put(REQUEST_METHORD, "CONNECT");
 						String getValue = line.split(" ")[1];
 						hashMap.put(REQUEST_URL, getValue);
-						continue;
+						break;
 					}
 				}
 				if (line.length() == 0) {
-					if (hashMap.get(REQUEST_METHORD).equals("POST")) {
-						Utils.log(LOGTAG, "get post data br.readLine");
-						line = br.readLine();
-						Utils.log(LOGTAG, "get post data line=" + line);
-
-						int length = 0;
-						if (hashMap.containsKey("Content-Length")) {
-							length = Integer.valueOf(hashMap.get(
-									"Content-Length").replace(" ", ""));
-							Utils.log(LOGTAG, "Content-Length=" + length);
-						}
-
-						if (null == line) {
+					if (null != hashMap.get(REQUEST_METHORD)) {
+						if (hashMap.get(REQUEST_METHORD).equals("POST")) {
+							Utils.log(LOGTAG, "get post data br.readLine");
 							line = br.readLine();
-						}
-						Utils.log(LOGTAG, "get post data line=" + line);
+							Utils.log(LOGTAG, "get post data line=" + line);
 
-						Utils.log(LOGTAG, "get post data line=" + line);
-
-						String postData = line;
-						while (null != line) {
-							postData += line + '\n';
-							if (length == postData.length()) {
-								line = null;
-								break;
+							int length = 0;
+							if (hashMap.containsKey("Content-Length")) {
+								length = Integer.valueOf(hashMap.get(
+										"Content-Length").replace(" ", ""));
+								Utils.log(LOGTAG, "Content-Length=" + length);
 							}
-							line = br.readLine();
+
+							if (null == line) {
+								line = br.readLine();
+							}
+							Utils.log(LOGTAG, "get post data line=" + line);
+
+							Utils.log(LOGTAG, "get post data line=" + line);
+
+							String postData = line;
+							while (null != line) {
+								postData += line + '\n';
+								if (length == postData.length()) {
+									line = null;
+									break;
+								}
+								line = br.readLine();
+							}
+
+							hashMap.put("POST_DATA", postData);
+							Utils.log(LOGTAG, "post data=" + postData);
+
+							break;
+						} else {
+							break;
 						}
-
-						hashMap.put("POST_DATA", postData);
-						Utils.log(LOGTAG, "post data=" + postData);
-
-						break;
 					} else {
 						break;
 					}
@@ -298,5 +313,121 @@ public class ProxyServerWorkThread extends Thread {
 		Utils.log(LOGTAG, "encoded str=" + encodedStr);
 
 		return encodedStr;
+	}
+
+	HashMap<String, String> handleGET(BufferedReader br,
+			HashMap<String, String> hashMap, String firstline) {
+		Utils.log(LOGTAG, "handlePOST");
+		String line = firstline;
+		int length = 0;
+
+		while (true) {
+			try {
+				line = br.readLine();
+				length = line.length();
+				if (0 == length) {
+					break;
+				}
+
+				if (null != line) {
+					int index = line.indexOf(":");
+					if (index < 0) {
+						continue;
+					}
+
+					// Utils.log(LOGTAG, "index="+index+" of "+line.length());
+					String key = line.substring(0, index);
+					String value = line.substring(index + 1, line.length());
+					hashMap.put(key, value);
+				}
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return hashMap;
+	}
+
+	HashMap<String, String> handlePOST(BufferedReader br,
+			HashMap<String, String> hashMap, String firstline) {
+		Utils.log(LOGTAG, "handlePOST");
+		String line = firstline;
+		int length = 0;
+		while (true) {
+			try {
+				line = br.readLine();
+				length = line.length();
+
+				Utils.log(LOGTAG, "line=" + line + ",length=" + length);
+
+				if (null == line) {
+					Utils.log(LOGTAG, "line==null");
+					break;
+				}
+
+				if (0 == length) {
+					int contentLength = Integer.valueOf(hashMap.get(
+							"Content-Length").replace(" ", ""));
+					int readLength = 0;
+					String postData = "";
+					Utils.log(LOGTAG, "Get Post data,contentLength="+contentLength);
+					while (readLength < contentLength) {
+						line = br.readLine()+'\n';
+						readLength += line.length();
+						postData += line;
+						Utils.log(LOGTAG, "line=" + line + ",readLength="+readLength);
+					}
+
+					hashMap.put("POST_DATA", postData);
+					Utils.log(LOGTAG, "post data=" + postData);
+					break;
+				}
+
+				int index = line.indexOf(":");
+				if (index < 0) {
+					continue;
+				}
+
+				// Utils.log(LOGTAG, "index="+index+" of "+line.length());
+				String key = line.substring(0, index);
+				String value = line.substring(index + 1, line.length());
+				hashMap.put(key, value);
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return hashMap;
+
+	}
+
+	void handleCONNECT() {
+		Utils.log(LOGTAG, "handlePOST");
+		
+		SSLContext sslContext = null;
+		try {
+			sslContext = SSLContext.getInstance("SSLv3");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+
+	    //sslContext.init(kmf.getKeyManagers(),null,null);
+
+	    SSLServerSocketFactory factory=sslContext.getServerSocketFactory();
+	    
+	    SocketFactory SS =SSLSocketFactory.getDefault();
+
+	    try {
+			SSLServerSocket s = (SSLServerSocket)factory.createServerSocket(9999);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
