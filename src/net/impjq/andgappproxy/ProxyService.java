@@ -6,7 +6,9 @@ import java.net.Socket;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 
 public class ProxyService extends Service {
 	public static final String LOGTAG = ProxyService.class.getSimpleName();
@@ -16,11 +18,14 @@ public class ProxyService extends Service {
 	boolean mIsServerRunning;
 	ServerSocket serverSocket;
 
+	private String mFetchServerUrl;
+	private String mLocalPort;
+
 	@Override
 	public void onCreate() {
 		// TODO Auto-generated method stub
 		super.onCreate();
-		mIsServerRunning = false;
+		mIsServerRunning = false;		
 	}
 
 	@Override
@@ -28,6 +33,7 @@ public class ProxyService extends Service {
 		// TODO Auto-generated method stub
 		super.onStart(intent, startId);
 		Utils.log(LOGTAG, "onStart,mIsServerRunning=" + mIsServerRunning);
+		readSettings();
 
 		if (null == intent) {
 			return;
@@ -38,7 +44,7 @@ public class ProxyService extends Service {
 		Utils.log(LOGTAG, "onStart,action==" + action);
 		if (action.equals(ACTION_START_SERVER)) {
 			if (!mIsServerRunning) {
-				startServer(Conf.PORT);
+				startServer(mFetchServerUrl,Integer.parseInt(mLocalPort));
 			}
 		}
 
@@ -53,6 +59,7 @@ public class ProxyService extends Service {
 			}
 
 			stopSelf();
+			mIsServerRunning = false;
 		}
 	}
 
@@ -62,7 +69,25 @@ public class ProxyService extends Service {
 		return null;
 	}
 
-	public void startServer(final int port) {
+	/**
+	 * Read the settings from SharedPreferences.
+	 */
+	private void readSettings() {
+		SharedPreferences preference = PreferenceManager
+				.getDefaultSharedPreferences(this);
+
+		// Get fetch server url
+		mFetchServerUrl = preference.getString(
+				GappProxy.SETTINGS_FETCH_SERVER_URL,
+				GappProxy.mDefaultFetchServerUrl);
+
+		// Get local port
+		mLocalPort = preference.getString(
+				GappProxy.SETTINGS_RUNNING_AT_LOCAL_PORT,
+				GappProxy.mDefaultLocalPort);
+	}
+
+	public void startServer(final String fetchServerUrl, final int port) {
 		Utils.log(LOGTAG, "startServer:port=" + port);
 
 		new Thread(new Runnable() {
@@ -73,9 +98,9 @@ public class ProxyService extends Service {
 					serverSocket = new ServerSocket(port);
 					mIsServerRunning = true;
 					while (true) {
-						Utils.log(LOGTAG, "waiting for connect...");
+						Utils.log(LOGTAG, "waiting for connect,port="+port);
 						Socket client = serverSocket.accept();
-						new ProxyServerWorkThread(client).start();
+						new ProxyServerWorkThread(client,fetchServerUrl).start();
 					}
 
 				} catch (IOException e) {

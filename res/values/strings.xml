@@ -4,4 +4,7 @@
     <string name="app_name">AndroidGappProxy</string>
     <string name="start_proxy">Start Proxy</string>
     <string name="stop_proxy">Stop Proxy</string>
+    
+    <string name="fetch_server">http://your_fetch_server.appspot.com/fetch.py</string>
+     <string name="local_port">PORT=5865,change it if you want.</string>
 </resources>

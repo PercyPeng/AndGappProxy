@@ -12,7 +12,6 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.NoSuchAlgorithmException;
-import java.security.KeyStore.Entry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,36 +24,32 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
 
 public class ProxyServerWorkThread extends Thread {
 	public static final String LOGTAG = ProxyServerWorkThread.class
 			.getSimpleName();
 	Socket mClienSocket;
-	
+
 	SSLSocket mSSLSocket;
 
-	String mGappProxyURL = "http://pjqproxy1.appspot.com/fetch.py";
+	String mGappProxyURL;
 
 	public static final String REQUEST_URL = "Request_URL";
 	public static final String REQUEST_METHORD = "Request_METHORD";
 
-	public ProxyServerWorkThread(Socket clientSocket) {
+	public ProxyServerWorkThread(Socket clientSocket, String fetchServerUrl) {
 		// TODO Auto-generated constructor stub
 		mClienSocket = clientSocket;
+		mGappProxyURL = fetchServerUrl;
 	}
 
 	@Override
@@ -372,12 +367,14 @@ public class ProxyServerWorkThread extends Thread {
 							"Content-Length").replace(" ", ""));
 					int readLength = 0;
 					String postData = "";
-					Utils.log(LOGTAG, "Get Post data,contentLength="+contentLength);
+					Utils.log(LOGTAG, "Get Post data,contentLength="
+							+ contentLength);
 					while (readLength < contentLength) {
-						line = br.readLine()+'\n';
+						line = br.readLine() + '\n';
 						readLength += line.length();
 						postData += line;
-						Utils.log(LOGTAG, "line=" + line + ",readLength="+readLength);
+						Utils.log(LOGTAG, "line=" + line + ",readLength="
+								+ readLength);
 					}
 
 					hashMap.put("POST_DATA", postData);
@@ -407,24 +404,25 @@ public class ProxyServerWorkThread extends Thread {
 
 	void handleCONNECT() {
 		Utils.log(LOGTAG, "handlePOST");
-		
+
 		SSLContext sslContext = null;
 		try {
 			sslContext = SSLContext.getInstance("SSLv3");
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		}
 
-	    //sslContext.init(kmf.getKeyManagers(),null,null);
+		// sslContext.init(kmf.getKeyManagers(),null,null);
 
-	    SSLServerSocketFactory factory=sslContext.getServerSocketFactory();
-	    
-	    SocketFactory SS =SSLSocketFactory.getDefault();
+		SSLServerSocketFactory factory = sslContext.getServerSocketFactory();
 
-	    try {
-			SSLServerSocket s = (SSLServerSocket)factory.createServerSocket(9999);
-			
+		SocketFactory SS = SSLSocketFactory.getDefault();
+
+		try {
+			SSLServerSocket s = (SSLServerSocket) factory
+					.createServerSocket(9999);
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

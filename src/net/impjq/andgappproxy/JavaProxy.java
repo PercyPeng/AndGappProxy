@@ -25,7 +25,7 @@ public class JavaProxy {
             while (true) {
                 Utils.log(LOGTAG, "waiting for connect...");
                 Socket client = serverSocket.accept();
-                new ProxyServerWorkThread(client).start();
+                new ProxyServerWorkThread(client,GappProxy.mDefaultFetchServerUrl).start();
             }
 
         } catch (IOException e) {
