@@ -15,6 +15,7 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -34,7 +35,7 @@ public class GappProxy extends Activity implements OnClickListener {
 	private Button mStopProxyButton;
 
 	private EditText mGappProxyServerURLEditText;
-	private EditText mGappProxyLocalServerPort;
+	private EditText mGappProxyLocalServerPort;	
 
 	/** Called when the activity is first created. */
 	@Override
@@ -90,7 +91,7 @@ public class GappProxy extends Activity implements OnClickListener {
 		switch (key) {
 		case R.id.startProxyButton:
 			Utils.log(LOGTAG, "onClick startProxyButton");
-			//First need to save the settings.
+			// First need to save the settings.
 			saveSettings();
 			Intent startProxyIntent = new Intent(this, ProxyService.class);
 			startProxyIntent.setAction(ProxyService.ACTION_START_SERVER);
@@ -144,6 +145,7 @@ public class GappProxy extends Activity implements OnClickListener {
 
 		if (null != serverUrl) {
 			editor.putString(SETTINGS_FETCH_SERVER_URL, serverUrl);
+			mFetchServerUrl = serverUrl;
 		}
 
 		// Save local port.
@@ -151,6 +153,7 @@ public class GappProxy extends Activity implements OnClickListener {
 
 		if (null != port) {
 			editor.putString(SETTINGS_RUNNING_AT_LOCAL_PORT, port);
+			mLocalPort = port;
 		}
 
 		editor.commit();
@@ -184,6 +187,11 @@ public class GappProxy extends Activity implements OnClickListener {
 		if (null != mGappProxyLocalServerPort) {
 			mGappProxyLocalServerPort.setText(mLocalPort);
 		}
+	}
+
+	private void setProxy() {
+		System.getProperties().setProperty("http.proxyHost", "10.85.40.153");
+		System.getProperties().setProperty("http.proxyPort", "8000");
 
 	}
 }
