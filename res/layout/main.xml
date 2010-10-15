@@ -6,7 +6,7 @@
 	<EditText android:hint="@string/fetch_server" android:id="@+id/gappProxy_fetchserver"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:singleLine="true" android:scrollHorizontally="true"
-		android:autoLink="all" android:ellipsize="end"></EditText>
+		android:ellipsize="end"></EditText>
 	<EditText android:hint="@string/local_port" android:id="@+id/gappProxy_localport"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"></EditText>
 	<Button android:text="@string/start_proxy" android:id="@+id/startProxyButton"

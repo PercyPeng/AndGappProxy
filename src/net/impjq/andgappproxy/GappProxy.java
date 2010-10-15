@@ -25,7 +25,7 @@ public class GappProxy extends Activity implements OnClickListener {
 	static final String SETTINGS_FETCH_SERVER_URL = "gappproxy_fetch_server_url";
 	static final String SETTINGS_RUNNING_AT_LOCAL_PORT = "gappproxy_local_port";
 
-	static final String mDefaultFetchServerUrl = "http://pjqgapp.appspot.com/fetch.py";
+	static final String mDefaultFetchServerUrl = "http://yourgappproxy.appspot.com/fetch.py";
 	static final String mDefaultLocalPort = "5865";
 
 	private String mFetchServerUrl;
